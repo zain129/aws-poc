@@ -1,11 +1,5 @@
 package com.ast.poc_aws.service;
 
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.ast.poc_aws.model.ModelObject;
 import com.ast.poc_aws.model.PersonData;
 import com.ast.poc_aws.repository.PersonDataRepository;
@@ -15,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -41,45 +34,34 @@ public class PersonDataServiceImpl implements PersonDataService {
     private final String SOURCE_DIRECT = "DIRECT";
     private final String SOURCE_SP = "STORED_PROCEDURE";
 
-//    @Autowired
-//    private AmazonDynamoDB amazonDynamoDB;
-
     @Override
     public String getJsonDoc() {
         // Perform steps to get data from dynamo
-//        String jsonResult = "{\"name\":\"John Doe\", \"birthdate\":\"20210212\", \"weight\":\"50\", \"weight-unit\":\"KG\"}";
-        AmazonDynamoDB client
-                = new AmazonDynamoDBClient(new BasicAWSCredentials(amazonAWSAccessKey, amazonAWSSecretKey));
-        if (!StringUtils.isEmpty(amazonDynamoDBEndpoint)) {
-            client.setEndpoint(amazonDynamoDBEndpoint);
-        }
-
-        DynamoDB dynamoDB = new DynamoDB(client);
-        Table table = dynamoDB.getTable("PersonData");
-        String name = "John Doe";
-        GetItemSpec spec = new GetItemSpec().withPrimaryKey("name", name);
-        return table.getItem(spec).toJSON();
+        return ("{\"name\":\"John Doe\", \"birthdate\":\"20210212\", \"weight\":\"50\", \"weight_unit\":\"KG\"}");
+//        AmazonDynamoDB client = new AmazonDynamoDBClient(
+//                new BasicAWSCredentials(amazonAWSAccessKey, amazonAWSSecretKey));
+//        if (!StringUtils.isEmpty(amazonDynamoDBEndpoint)) {
+//            client.setEndpoint(amazonDynamoDBEndpoint);
+//        }
+//        DynamoDB dynamoDB = new DynamoDB(client);
+//        Table table = dynamoDB.getTable("PersonData");
+//        String name = "John Doe";
+//        GetItemSpec spec = new GetItemSpec().withPrimaryKey("name", name);
+//        return table.getItem(spec).toJSON();
     }
 
     @Override
-    public boolean validateData(String personData) {
+    public boolean validateData(Date dateOfBirth, int weight) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            ModelObject personObj = mapper.readValue(personData, ModelObject.class);
-
-            // Call Java Lambda Function
-            int weight = Integer.parseInt(personObj.getWeight());
-            // in ranges 10, 200
+            // weight should be in ranges 10, 200
             if (weight < 10 || weight > 200) {
                 return Boolean.FALSE;
             }
 
-            String dob = personObj.getDob();    //yyyyMMdd
-            DateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-            Date dateOfBirth, rangeStart, rangeEnd;
-            sdf.setLenient(false);
+            Date rangeStart, rangeEnd;
             try {
-                dateOfBirth = sdf.parse(dob);
+                DateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+                sdf.setLenient(false);
                 rangeStart = sdf.parse("19000101"); // Jan 1, 1900
                 rangeEnd = sdf.parse("21000101");    // Jan 1, 2100
             } catch (ParseException e) {
@@ -113,16 +95,22 @@ public class PersonDataServiceImpl implements PersonDataService {
     public PersonData insertDirectIntoPG(PersonData personData) {
         personData.setSource(this.SOURCE_DIRECT);
         personData = personDataRepository.save(personData);
+        log.info("********** Record inserted **********");
+        log.info("Source: " + SOURCE_DIRECT + "\nID: " + personData.getPersonId());
+        log.info("*************************************");
         return personData;
     }
 
     @Override
     public int insertUsingSpIntoPG(PersonData personData) {
         try {
-            int i = personDataRepository.savePersonDataUsingProcedure(
+            int id = personDataRepository.savePersonDataUsingProcedure(
                     personData.getName(), personData.getDateOfBirth(),
                     personData.getWeight(), personData.getWeightUnit(), this.SOURCE_SP, 0);
-            return i;
+            log.info("********** Record inserted **********");
+            log.info("Source: " + SOURCE_SP + "\nID: " + id);
+            log.info("*************************************");
+            return id;
         } catch (Exception ex) {
             log.info("insertUsingSpIntoPG -> " + ex.getLocalizedMessage());
         }

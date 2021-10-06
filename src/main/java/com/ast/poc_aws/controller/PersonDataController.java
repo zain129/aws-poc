@@ -26,8 +26,8 @@ public class PersonDataController {
         try {
             PersonData personDataFromJSON = null;
             String jsonDoc = personDataService.getJsonDoc();
-            if (personDataService.validateData(jsonDoc)) {
-                personDataFromJSON = personDataService.getPersonDataFromJSON(jsonDoc);
+            personDataFromJSON = personDataService.getPersonDataFromJSON(jsonDoc);
+            if (personDataService.validateData(personDataFromJSON.getDateOfBirth(), personDataFromJSON.getWeight())) {
                 PersonData personData = personDataService.insertDirectIntoPG(personDataFromJSON);
                 int id = personDataService.insertUsingSpIntoPG(personDataFromJSON);
 
