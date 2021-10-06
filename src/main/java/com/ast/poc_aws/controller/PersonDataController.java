@@ -35,7 +35,7 @@ public class PersonDataController {
 
                 RestTemplate restTemplate = new RestTemplate();
                 ResponseEntity<String> result = restTemplate.postForEntity(uri, personData, String.class);
-                return ResponseEntity.ok(result);
+                return result;
             } else {
                 final String uri = URI + "/2/sayError?name=" + personDataService.getNameOnly(jsonDoc);
 
