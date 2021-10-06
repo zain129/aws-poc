@@ -11,6 +11,6 @@ public class ModelObject {
     public String dob;
     @JsonProperty("weight")
     public String weight;
-    @JsonProperty("weight-unit")
+    @JsonProperty("weight_unit")
     public String weightUnit;
 }

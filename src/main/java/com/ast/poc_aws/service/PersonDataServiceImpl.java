@@ -1,5 +1,11 @@
 package com.ast.poc_aws.service;
 
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.ast.poc_aws.model.ModelObject;
 import com.ast.poc_aws.model.PersonData;
 import com.ast.poc_aws.repository.PersonDataRepository;
@@ -7,7 +13,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -21,14 +29,36 @@ public class PersonDataServiceImpl implements PersonDataService {
     @Autowired
     private PersonDataRepository personDataRepository;
 
+    @Value("${amazon.dynamodb.endpoint}")
+    private String amazonDynamoDBEndpoint;
+
+    @Value("${amazon.aws.accesskey}")
+    private String amazonAWSAccessKey;
+
+    @Value("${amazon.aws.secretkey}")
+    private String amazonAWSSecretKey;
+
     private final String SOURCE_DIRECT = "DIRECT";
     private final String SOURCE_SP = "STORED_PROCEDURE";
 
+//    @Autowired
+//    private AmazonDynamoDB amazonDynamoDB;
+
     @Override
     public String getJsonDoc() {
-        // Perform steps to get data from amplify
-        String jsonResult = "{\"name\":\"John Doe\", \"birthdate\":\"20210212\", \"weight\":\"50\", \"weight-unit\":\"KG\"}";
-        return jsonResult;
+        // Perform steps to get data from dynamo
+//        String jsonResult = "{\"name\":\"John Doe\", \"birthdate\":\"20210212\", \"weight\":\"50\", \"weight-unit\":\"KG\"}";
+        AmazonDynamoDB client
+                = new AmazonDynamoDBClient(new BasicAWSCredentials(amazonAWSAccessKey, amazonAWSSecretKey));
+        if (!StringUtils.isEmpty(amazonDynamoDBEndpoint)) {
+            client.setEndpoint(amazonDynamoDBEndpoint);
+        }
+
+        DynamoDB dynamoDB = new DynamoDB(client);
+        Table table = dynamoDB.getTable("PersonData");
+        String name = "John Doe";
+        GetItemSpec spec = new GetItemSpec().withPrimaryKey("name", name);
+        return table.getItem(spec).toJSON();
     }
 
     @Override
