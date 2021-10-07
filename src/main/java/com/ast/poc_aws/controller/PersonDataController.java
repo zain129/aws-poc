@@ -24,19 +24,21 @@ public class PersonDataController {
     @GetMapping("/getAndValidate")
     public ResponseEntity getAndValidate() {
         try {
-            PersonData personDataFromJSON = null;
+            PersonData personDataFromJSON;
             String jsonDoc = personDataService.getJsonDoc();
             personDataFromJSON = personDataService.getPersonDataFromJSON(jsonDoc);
             if (personDataService.validateData(personDataFromJSON.getDateOfBirth(), personDataFromJSON.getWeight())) {
                 PersonData personData = personDataService.insertDirectIntoPG(personDataFromJSON);
                 int id = personDataService.insertUsingSpIntoPG(personDataFromJSON);
 
+                /* Calling another service */
+                log.info("Calling another API '/2/printData'");
                 final String uri = URI + "/2/printData";
-
                 RestTemplate restTemplate = new RestTemplate();
                 ResponseEntity<String> result = restTemplate.postForEntity(uri, personData, String.class);
                 return result;
             } else {
+                log.info("Calling another API '/2/sayError'");
                 final String uri = URI + "/2/sayError?name=" + personDataService.getNameOnly(jsonDoc);
 
                 RestTemplate restTemplate = new RestTemplate();

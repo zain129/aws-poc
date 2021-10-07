@@ -41,4 +41,15 @@ public class PersonData {
     @Basic
     @Column(name = "source")
     private String source;
+
+    @Override
+    public String toString() {
+        return "PersonData{" +
+                "personId=" + personId +
+                ", name='" + name + '\'' +
+                ", dateOfBirth=" + dateOfBirth +
+                ", weight=" + weight +
+                ", weightUnit='" + weightUnit + '\'' +
+                '}';
+    }
 }
